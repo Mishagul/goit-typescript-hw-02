@@ -6,7 +6,7 @@ import ErrorMessage from './components/ErrorMessage/ErrorMessage';
 import LoadMoreBtn from './components/LoadMoreBtn/LoadMoreBtn';
 import ImageModal from './components/ImageModal/ImageModal';
 import { toast } from 'react-hot-toast';
-import { Image } from './types/types';
+import { Image, ResponseData } from './types/types';
 
 const App: React.FC = () => {
   const [query, setQuery] = useState<string>('');
@@ -26,14 +26,18 @@ const App: React.FC = () => {
       const response = await fetch(
         `https://api.unsplash.com/search/photos?query=${query}&page=${page}&per_page=12&client_id=${ACCESS_KEY}`
       );
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+      const data = (await response.json()) as ResponseData;
+
       if (data.results.length === 0) {
         toast.error('No images found');
         setError('No images found');
       } else {
         setImages((prev) => [...prev, ...data.results]);
       }
-    } catch (error) {
+    } catch (err) {
       setError('Something went wrong');
       toast.error('Something went wrong');
     } finally {
@@ -49,8 +53,9 @@ const App: React.FC = () => {
   }, [query]);
 
   const loadMoreImages = (): void => {
-    setPage((prev) => prev + 1);
-    fetchImages(query, page + 1);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchImages(query, nextPage);
   };
 
   const openModal = (image: Image): void => {
